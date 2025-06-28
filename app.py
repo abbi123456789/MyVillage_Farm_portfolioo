@@ -6,7 +6,7 @@ import plotly.express as px
 st.set_page_config(page_title="Rajupalem Land Dashboard", layout="wide")
 
 # ----------------- LOAD DATA -----------------
-df = pd.read_excel(r"C:\Users\abhir\OneDrive\Desktop\streamlit\Rajupalem Land Records.xlsx")
+df = pd.read_excel("Rajupalem Land Records.xlsx")
 
 # ----------------- CLEANUP -----------------
 df.columns = df.columns.str.strip()
