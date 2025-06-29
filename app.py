@@ -13,89 +13,83 @@ df.columns = df.columns.str.strip()
 df['Land owner name'] = df['Land owner name'].astype(str).str.strip()
 df['Land nature'] = df['Land nature'].astype(str).str.strip()
 df['Land classification'] = df['Land classification'].astype(str).str.strip()
-df['Account No.'] = df['Account No.'].astype(str).str.strip()
+df['Account No.'] = pd.to_numeric(df['Account No.'], errors='coerce')
 df['Land Parcel Number'] = pd.to_numeric(df['Land Parcel Number'], errors='coerce')
 df['Land Extent (in acres)'] = pd.to_numeric(df['Land Extent (in acres)'], errors='coerce')
 
-# Identify shared land parcels
-# Identify shared land parcel numbers
+# ----------------- SHARED LAND PARCEL LOGIC -----------------
 shared_parcels = df['Land Parcel Number'].value_counts()
-shared_parcels = shared_parcels[shared_parcels > 1].index.tolist()
-shared_parcel_options = ["All"] + sorted([int(p) for p in shared_parcels])
+shared_parcels = shared_parcels[shared_parcels > 1].index.dropna().astype(int).tolist()
 
-
+# ----------------- FILTER OPTIONS -----------------
+land_owner_options = sorted(df['Land owner name'].dropna().unique().tolist())
+account_no_options = sorted(df['Account No.'].dropna().astype(int).unique().tolist())
+land_parcel_options = sorted(df['Land Parcel Number'].dropna().astype(int).unique().tolist())
+shared_parcel_options = sorted(shared_parcels)
 
 # ----------------- SESSION STATE INIT -----------------
-for key in ["land_owner", "account_no", "land_parcel"]:
-    if key not in st.session_state:
-        st.session_state[key] = "All"
+if "land_owner" not in st.session_state:
+    st.session_state["land_owner"] = []
+if "account_no" not in st.session_state:
+    st.session_state["account_no"] = []
+if "land_parcel" not in st.session_state:
+    st.session_state["land_parcel"] = []
+if "shared_parcel" not in st.session_state:
+    st.session_state["shared_parcel"] = []
 
 # ----------------- SIDEBAR FILTERS -----------------
 with st.sidebar:
     st.title("🔍 Filters")
 
     if st.button("🔁 Reset Filters"):
-        st.session_state["land_owner"] = "All"
-        st.session_state["account_no"] = "All"
-        st.session_state["land_parcel"] = "All"
-        st.session_state["shared_land_parcel"] = "All" 
+        st.session_state["land_owner"] = []
+        st.session_state["account_no"] = []
+        st.session_state["land_parcel"] = []
+        st.session_state["shared_parcel"] = []
         st.rerun()
 
-    land_owner_options = ["All"] + sorted(df['Land owner name'].dropna().unique().tolist())
-    account_no_options = ["All"] + sorted(df['Account No.'].dropna().unique().tolist())
-    land_parcel_options = ["All"] + sorted(df['Land Parcel Number'].dropna().unique().astype(int).tolist())
-
-    st.selectbox(
-        "Land Owner Name",
+    st.multiselect(
+        "Land Owner Name (Search & Select)",
         options=land_owner_options,
-        index=land_owner_options.index(st.session_state.get("land_owner", "All")),
+        default=st.session_state["land_owner"],
         key="land_owner"
     )
 
-    st.selectbox(
+    st.multiselect(
         "Account Number",
         options=account_no_options,
-        index=account_no_options.index(st.session_state.get("account_no", "All")),
+        default=st.session_state["account_no"],
         key="account_no"
     )
 
-    st.selectbox(
+    st.multiselect(
         "Land Parcel Number",
         options=land_parcel_options,
-        index=land_parcel_options.index(st.session_state.get("land_parcel", "All")),
+        default=st.session_state["land_parcel"],
         key="land_parcel"
     )
-    # Shared Parcel Filter
-    # Shared Land Parcel Number Dropdown
-    selected_shared_parcel = st.selectbox(
-    "Shared Land Parcel Number",
-    options=shared_parcel_options,
-    key="shared_land_parcel"
+
+    st.multiselect(
+        "Shared Parcel Numbers",
+        options=shared_parcel_options,
+        default=st.session_state["shared_parcel"],
+        key="shared_parcel"
     )
-
-    
-
-
 
 # ----------------- APPLY FILTERS -----------------
 filtered_df = df.copy()
 
-if st.session_state["land_owner"] != "All":
-    filtered_df = filtered_df[filtered_df['Land owner name'] == st.session_state["land_owner"]]
+if st.session_state["land_owner"]:
+    filtered_df = filtered_df[filtered_df["Land owner name"].isin(st.session_state["land_owner"])]
 
-if st.session_state["account_no"] != "All":
-    filtered_df = filtered_df[filtered_df['Account No.'] == st.session_state["account_no"]]
+if st.session_state["account_no"]:
+    filtered_df = filtered_df[filtered_df["Account No."].astype('Int64').isin(st.session_state["account_no"])]
 
-if st.session_state["land_parcel"] != "All":
-    filtered_df = filtered_df[filtered_df['Land Parcel Number'] == int(st.session_state["land_parcel"])]
+if st.session_state["land_parcel"]:
+    filtered_df = filtered_df[filtered_df["Land Parcel Number"].astype('Int64').isin(st.session_state["land_parcel"])]
 
-# Filter by selected shared parcel if not "All"
-if st.session_state["shared_land_parcel"] != "All":
-    filtered_df = filtered_df[filtered_df["Land Parcel Number"] == int(st.session_state["shared_land_parcel"])]
-
-
-
-
+if st.session_state["shared_parcel"]:
+    filtered_df = filtered_df[filtered_df["Land Parcel Number"].astype('Int64').isin(st.session_state["shared_parcel"])]
 
 # ----------------- DAX-STYLE KPI CALCULATIONS -----------------
 parcel_max = filtered_df.groupby('Land Parcel Number')['Land Extent (in acres)'].max()
@@ -131,7 +125,7 @@ def kpi_card(title, value, color="#4CAF50", icon="📊"):
         </div>
     """, unsafe_allow_html=True)
 
-# ----------------- PAGE TITLE -----------------
+# ----------------- TITLE -----------------
 st.title("📊 Rajupalem Land Dashboard")
 st.markdown("**Village: Rajupalem, Mandal: Kothapatnam, District: Prakasam 523280**")
 
@@ -150,7 +144,7 @@ with col4:
 with col5:
     kpi_card("Total Parcels", f"{total_parcels}", "#FFC107", "🧾")
 
-# ----------------- CHARTS SIDE-BY-SIDE -----------------
+# ----------------- CHARTS -----------------
 if not filtered_df.empty:
     col_chart1, col_chart2 = st.columns(2)
 
