@@ -38,6 +38,7 @@ with st.sidebar:
         st.session_state["land_owner"] = "All"
         st.session_state["account_no"] = "All"
         st.session_state["land_parcel"] = "All"
+        st.session_state["shared_land_parcel"] = "All" 
         st.rerun()
 
     land_owner_options = ["All"] + sorted(df['Land owner name'].dropna().unique().tolist())
