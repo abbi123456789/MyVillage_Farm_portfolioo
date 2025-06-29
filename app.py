@@ -17,6 +17,14 @@ df['Account No.'] = df['Account No.'].astype(str).str.strip()
 df['Land Parcel Number'] = pd.to_numeric(df['Land Parcel Number'], errors='coerce')
 df['Land Extent (in acres)'] = pd.to_numeric(df['Land Extent (in acres)'], errors='coerce')
 
+# Identify shared land parcels
+# Identify shared land parcel numbers
+shared_parcels = df['Land Parcel Number'].value_counts()
+shared_parcels = shared_parcels[shared_parcels > 1].index.tolist()
+shared_parcel_options = ["All"] + sorted([int(p) for p in shared_parcels])
+
+
+
 # ----------------- SESSION STATE INIT -----------------
 for key in ["land_owner", "account_no", "land_parcel"]:
     if key not in st.session_state:
@@ -56,6 +64,16 @@ with st.sidebar:
         index=land_parcel_options.index(st.session_state.get("land_parcel", "All")),
         key="land_parcel"
     )
+    # Shared Parcel Filter
+    # Shared Land Parcel Number Dropdown
+    selected_shared_parcel = st.selectbox(
+    "Shared Land Parcel Number",
+    options=shared_parcel_options,
+    key="shared_land_parcel"
+    )
+
+    
+
 
 
 # ----------------- APPLY FILTERS -----------------
@@ -69,6 +87,14 @@ if st.session_state["account_no"] != "All":
 
 if st.session_state["land_parcel"] != "All":
     filtered_df = filtered_df[filtered_df['Land Parcel Number'] == int(st.session_state["land_parcel"])]
+
+# Filter by selected shared parcel if not "All"
+if st.session_state["shared_land_parcel"] != "All":
+    filtered_df = filtered_df[filtered_df["Land Parcel Number"] == int(st.session_state["shared_land_parcel"])]
+
+
+
+
 
 # ----------------- DAX-STYLE KPI CALCULATIONS -----------------
 parcel_max = filtered_df.groupby('Land Parcel Number')['Land Extent (in acres)'].max()
