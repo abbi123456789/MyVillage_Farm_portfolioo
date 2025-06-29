@@ -32,29 +32,31 @@ with st.sidebar:
         st.session_state["land_parcel"] = "All"
         st.rerun()
 
+    land_owner_options = ["All"] + sorted(df['Land owner name'].dropna().unique().tolist())
+    account_no_options = ["All"] + sorted(df['Account No.'].dropna().unique().tolist())
+    land_parcel_options = ["All"] + sorted(df['Land Parcel Number'].dropna().unique().astype(int).tolist())
+
     st.selectbox(
         "Land Owner Name",
-        options=["All"] + sorted(df['Land owner name'].dropna().unique().tolist()),
-        index=0 if st.session_state["land_owner"] == "All" else None,
+        options=land_owner_options,
+        index=land_owner_options.index(st.session_state.get("land_owner", "All")),
         key="land_owner"
     )
 
     st.selectbox(
         "Account Number",
-        options=["All"] + sorted(df['Account No.'].dropna().unique().tolist()),
-        index=0 if st.session_state["account_no"] == "All" else None,
+        options=account_no_options,
+        index=account_no_options.index(st.session_state.get("account_no", "All")),
         key="account_no"
     )
 
-    parcel_options = sorted(df['Land Parcel Number'].dropna().unique().astype(int).tolist())
-    parcel_options = ["All"] + parcel_options
-
     st.selectbox(
         "Land Parcel Number",
-        options=parcel_options,
-        index=0 if st.session_state["land_parcel"] == "All" else None,
+        options=land_parcel_options,
+        index=land_parcel_options.index(st.session_state.get("land_parcel", "All")),
         key="land_parcel"
     )
+
 
 # ----------------- APPLY FILTERS -----------------
 filtered_df = df.copy()
