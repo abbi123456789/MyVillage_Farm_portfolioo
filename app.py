@@ -106,6 +106,13 @@ govt_extent = govt_parcel_max.sum()
 distinct_owners = filtered_df["Land owner name"].nunique()
 total_parcels = filtered_df["Land Parcel Number"].nunique()
 
+dax_df = (
+    filtered_df.groupby(["Land classification", "Land Parcel Number"])["Land Extent (in acres)"]
+    .max()
+    .reset_index()
+)
+
+
 # ----------------- KPI CARD FUNCTION -----------------
 def kpi_card(title, value, color="#4CAF50", icon="📊"):
     st.markdown(f"""
@@ -158,7 +165,7 @@ if not filtered_df.empty:
         st.plotly_chart(pie_chart, use_container_width=True)
 
     with col_chart2:
-        bar_data = filtered_df.groupby("Land classification")["Land Extent (in acres)"].sum().reset_index()
+        bar_data = dax_df.groupby("Land classification")["Land Extent (in acres)"].sum().reset_index()
         bar_chart = px.bar(
             bar_data,
             x="Land classification",
